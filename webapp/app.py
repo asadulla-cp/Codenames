@@ -24,7 +24,7 @@ from webapp.engine import (
 
 app = Flask(__name__)
 app.secret_key = "codenames-multiplayer-secret-2024"
-socketio = SocketIO(app, cors_allowed_origins="*", manage_session=False, async_mode="gevent")
+socketio = SocketIO(app, cors_allowed_origins="*", manage_session=False, async_mode="threading")
 
 # ── Room registry ─────────────────────────────────────────────────────────────
 # ROOMS[room_name] = {
