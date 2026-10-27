@@ -13,7 +13,7 @@ import time
 from flask import Flask, session, request, jsonify, render_template
 from flask_socketio import SocketIO, join_room, leave_room, emit
 
-from engine import (
+from webapp.engine import (
     new_game,
     action_start_game,
     action_give_clue,
