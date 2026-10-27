@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Codenames</title>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+
+<!-- ══════════ LOGIN SCREEN ══════════ -->
+<div id="screen-login" class="screen active">
+  <div class="login-particles" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+
+  <div class="login-wrapper">
+    <div class="login-hero">
+      <div class="login-logo">
+        <span class="logo-word logo-red">CODE</span><span class="logo-word logo-blue">NAMES</span>
+      </div>
+      <p class="login-tagline">Real-time multiplayer · Each player on their own device</p>
+    </div>
+
+    <div class="login-card">
+      <div class="tab-bar">
+        <button class="tab active" id="tab-join"   onclick="switchTab('join')">  <span class="tab-icon">🚪</span> Join Room   </button>
+        <button class="tab"        id="tab-create" onclick="switchTab('create')"><span class="tab-icon">✨</span> Create Room </button>
+      </div>
+
+      <!-- JOIN -->
+      <div id="panel-join" class="tab-panel active">
+        <div class="field-group">
+          <label class="field-label">Your Name</label>
+          <div class="field-wrap">
+            <span class="field-icon">👤</span>
+            <input type="text" id="join-username" class="field-input" placeholder="Enter your name…" maxlength="20" autocomplete="off"/>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Room Name</label>
+          <div class="field-wrap">
+            <span class="field-icon">🏠</span>
+            <input type="text" id="join-room-name" class="field-input" placeholder="Room name…" maxlength="30" autocomplete="off"/>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Password</label>
+          <div class="field-wrap">
+            <span class="field-icon">🔑</span>
+            <input type="password" id="join-password" class="field-input" placeholder="Password…" maxlength="50" autocomplete="off" onkeydown="if(event.key==='Enter')joinRoom()"/>
+            <button class="toggle-pw" onclick="togglePassword('join-password')">👁</button>
+          </div>
+        </div>
+        <div id="join-error" class="login-error hidden"></div>
+        <button class="btn-login red-login-btn" onclick="joinRoom()">
+          <span id="join-spinner" class="hidden">⏳ </span>Join Game →
+        </button>
+      </div>
+
+      <!-- CREATE -->
+      <div id="panel-create" class="tab-panel hidden">
+        <div class="field-group">
+          <label class="field-label">Your Name</label>
+          <div class="field-wrap">
+            <span class="field-icon">👤</span>
+            <input type="text" id="create-username" class="field-input" placeholder="Enter your name…" maxlength="20" autocomplete="off"/>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Room Name</label>
+          <div class="field-wrap">
+            <span class="field-icon">🏠</span>
+            <input type="text" id="create-room-name" class="field-input" placeholder="Create a room name…" maxlength="30" autocomplete="off"/>
+          </div>
+          <p class="field-hint">Share this name + password with your friends</p>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Password</label>
+          <div class="field-wrap">
+            <span class="field-icon">🔑</span>
+            <input type="password" id="create-password" class="field-input" placeholder="Set a password…" maxlength="50" autocomplete="off" onkeydown="if(event.key==='Enter')createRoom()"/>
+            <button class="toggle-pw" onclick="togglePassword('create-password')">👁</button>
+          </div>
+          <p class="field-hint">Min 3 characters</p>
+        </div>
+        <div id="create-error" class="login-error hidden"></div>
+        <button class="btn-login blue-login-btn" onclick="createRoom()">
+          <span id="create-spinner" class="hidden">⏳ </span>Create Room ✨
+        </button>
+      </div>
+    </div>
+
+    <!-- Active rooms -->
+    <div class="rooms-list-section">
+      <div class="rooms-list-header">
+        <span class="rooms-list-title">Active Rooms</span>
+        <button class="btn-refresh" onclick="loadRooms()" title="Refresh">↻</button>
+      </div>
+      <div id="rooms-list" class="rooms-list">
+        <span class="rooms-empty">Loading…</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ LOBBY / ROLE PICKER ══════════ -->
+<div id="screen-lobby" class="screen">
+  <div class="lobby-wrapper">
+
+    <div class="lobby-top">
+      <div class="login-logo" style="font-size:2rem; margin-bottom:0.2rem;">
+        <span class="logo-word logo-red">CODE</span><span class="logo-word logo-blue">NAMES</span>
+      </div>
+      <div class="lobby-room-info">
+        <span class="lobby-room-pill">🏠 <span id="lobby-room-name">Room</span></span>
+        <span class="lobby-you-pill">You: <strong id="lobby-username"></strong></span>
+        <button class="btn-leave-small" onclick="leaveRoom()">Leave</button>
+      </div>
+    </div>
+
+    <p class="lobby-subtitle">Pick your role — each player must choose one</p>
+
+    <div class="roles-grid">
+
+      <!-- RED SPYMASTER -->
+      <div class="role-card red-role" id="role-RED_SPYMASTER" onclick="pickRole('RED_SPYMASTER')">
+        <div class="role-team-badge red-badge">RED</div>
+        <div class="role-icon">🔍</div>
+        <div class="role-title">Spymaster</div>
+        <div class="role-desc">You see all card colors. Give one-word clues to guide your team.</div>
+        <div class="role-taken-by" id="taken-RED_SPYMASTER"></div>
+      </div>
+
+      <!-- RED OPERATIVE -->
+      <div class="role-card red-role" id="role-RED_OPERATIVE" onclick="pickRole('RED_OPERATIVE')">
+        <div class="role-team-badge red-badge">RED</div>
+        <div class="role-icon">🕵</div>
+        <div class="role-title">Operative</div>
+        <div class="role-desc">Listen to your Spymaster's clue and guess the right cards.</div>
+        <div class="role-taken-by" id="taken-RED_OPERATIVE"></div>
+      </div>
+
+      <!-- BLUE SPYMASTER -->
+      <div class="role-card blue-role" id="role-BLUE_SPYMASTER" onclick="pickRole('BLUE_SPYMASTER')">
+        <div class="role-team-badge blue-badge">BLUE</div>
+        <div class="role-icon">🔍</div>
+        <div class="role-title">Spymaster</div>
+        <div class="role-desc">You see all card colors. Give one-word clues to guide your team.</div>
+        <div class="role-taken-by" id="taken-BLUE_SPYMASTER"></div>
+      </div>
+
+      <!-- BLUE OPERATIVE -->
+      <div class="role-card blue-role" id="role-BLUE_OPERATIVE" onclick="pickRole('BLUE_OPERATIVE')">
+        <div class="role-team-badge blue-badge">BLUE</div>
+        <div class="role-icon">🕵</div>
+        <div class="role-title">Operative</div>
+        <div class="role-desc">Listen to your Spymaster's clue and guess the right cards.</div>
+        <div class="role-taken-by" id="taken-BLUE_OPERATIVE"></div>
+      </div>
+
+    </div>
+
+    <div id="lobby-status" class="lobby-status"></div>
+
+    <div id="lobby-start-row" class="lobby-start-row hidden">
+      <div class="first-team-row" style="justify-content:center;">
+        <label>Who goes first?</label>
+        <div class="radio-group">
+          <label class="radio-label red-label"><input type="radio" name="firstTeam" value="RED" checked/> RED</label>
+          <label class="radio-label blue-label"><input type="radio" name="firstTeam" value="BLUE"/> BLUE</label>
+          <label class="radio-label"><input type="radio" name="firstTeam" value="RANDOM"/> Random</label>
+        </div>
+      </div>
+      <button class="btn-start" onclick="startGame()">START GAME 🚀</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════ GAME SCREEN ══════════ -->
+<div id="screen-game" class="screen">
+  <header class="top-bar">
+    <div class="top-left">
+      <span class="logo-small">CODENAMES</span>
+      <span class="top-room-badge" id="top-room-name"></span>
+    </div>
+    <div class="score-block">
+      <span id="score-red"  class="score red-score">🔴 <span id="red-left">9</span></span>
+      <span id="score-blue" class="score blue-score">🔵 <span id="blue-left">8</span></span>
+    </div>
+    <div class="top-right">
+      <span id="top-my-role" class="top-role-badge"></span>
+      <button class="btn-new-game" onclick="requestNewGame()">New Game</button>
+      <button class="btn-leave-top" onclick="leaveRoom()">Leave</button>
+    </div>
+  </header>
+
+  <div id="phase-banner" class="phase-banner"></div>
+
+  <!-- Waiting overlay (when it's not your turn) -->
+  <div id="waiting-overlay" class="waiting-overlay hidden">
+    <span id="waiting-text">Waiting for other players…</span>
+  </div>
+
+  <div id="board" class="board"></div>
+
+  <div id="clue-bar" class="clue-bar hidden">
+    <span>Clue: <strong id="clue-display-word"></strong> — <strong id="clue-display-num"></strong></span>
+    <span class="guesses-left">Guesses left: <strong id="guesses-left-display"></strong></span>
+  </div>
+
+  <!-- Spymaster action panel -->
+  <div id="panel-spymaster" class="action-panel hidden">
+    <div class="panel-title" id="sm-title">🔍 Your turn — give a clue</div>
+    <div class="clue-form">
+      <input type="text"   id="clue-word-input" placeholder="One word clue" maxlength="30" autocomplete="off"/>
+      <input type="number" id="clue-num-input"  placeholder="Number (0=∞)"  min="0" max="9"/>
+      <button class="btn-action" id="btn-submit-clue" onclick="submitClue()">Give Clue</button>
+    </div>
+    <p class="panel-hint">Clue must not be a word on the board. 0 = unlimited guesses.</p>
+  </div>
+
+  <!-- Operative action panel -->
+  <div id="panel-operative" class="action-panel hidden">
+    <div class="panel-title" id="op-title">🕵 Your turn — click a card to guess</div>
+    <button class="btn-pass" onclick="passGuess()">Pass Turn</button>
+  </div>
+
+  <!-- Spectator / waiting panel -->
+  <div id="panel-spectate" class="action-panel hidden">
+    <div class="panel-title" id="spectate-title" style="color:var(--text-dim);">👀 Watching…</div>
+  </div>
+
+  <div class="log-panel">
+    <div class="log-title">Game Log</div>
+    <ul id="log-list"></ul>
+  </div>
+</div>
+
+<!-- ══════════ GAME OVER ══════════ -->
+<div id="screen-gameover" class="screen">
+  <div class="gameover-container">
+    <div id="gameover-icon" class="gameover-icon"></div>
+    <h1 id="gameover-title"></h1>
+    <p  id="gameover-reason"></p>
+    <div id="final-board" class="board gameover-board"></div>
+    <div class="gameover-scores">
+      <span class="score red-score">🔴 Red left: <strong id="go-red-left">0</strong></span>
+      <span class="score blue-score">🔵 Blue left: <strong id="go-blue-left">0</strong></span>
+    </div>
+    <button class="btn-start" onclick="requestNewGame()">Play Again</button>
+    <button class="btn-leave-gameover" onclick="leaveRoom()">Back to Lobby</button>
+  </div>
+</div>
+
+<script src="/static/js/game.js"></script>
+</body>
+</html>
