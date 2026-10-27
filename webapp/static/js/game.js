@@ -9,7 +9,7 @@ let G        = null;   // last game state from server
 let myRole   = null;   // e.g. "RED_SPYMASTER"
 let myRoom   = null;
 let myName   = null;
-const socket = io();
+const socket = io({ transports: ['websocket', 'polling'] });
 
 // ══════════════════════════════════════════════════════
 // SCREENS

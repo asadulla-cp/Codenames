@@ -12,6 +12,7 @@ import hashlib
 import time
 from flask import Flask, session, request, jsonify, render_template
 from flask_socketio import SocketIO, join_room, leave_room, emit
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from webapp.engine import (
     new_game,
@@ -23,7 +24,16 @@ from webapp.engine import (
 )
 
 app = Flask(__name__)
-app.secret_key = "codenames-multiplayer-secret-2024"
+app.secret_key = os.environ.get("SECRET_KEY", "codenames-multiplayer-secret-2024")
+
+# Trust Render's reverse proxy so Flask sees the real HTTPS scheme
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
+# Secure session cookie settings
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"]   = os.environ.get("RENDER", False)
+
 socketio = SocketIO(app, cors_allowed_origins="*", manage_session=False, async_mode="threading")
 
 # ── Room registry ─────────────────────────────────────────────────────────────
