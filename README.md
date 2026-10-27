@@ -2,7 +2,7 @@
 
 A real-time multiplayer implementation of the classic board game **Codenames**, playable in any browser.
 
-🎮 **Live Demo:** [codenames.onrender.com](https://codenames.onrender.com)
+🎮 **Live Demo:** [codenames-1-qorm.onrender.com](https://codenames-1-qorm.onrender.com)
 
 ---
 
